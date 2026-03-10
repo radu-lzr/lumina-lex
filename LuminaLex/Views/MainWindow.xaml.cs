@@ -201,22 +201,44 @@ public partial class MainWindow : Window
 
     private void CloseButton_Click(object sender, RoutedEventArgs e)
     {
-        var result = MessageBox.Show(
-            "Voulez-vous vraiment quitter Lumina Lex ?",
-            "Confirmation",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Question);
+        CloseConfirmOverlay.Opacity = 0;
+        CloseConfirmOverlay.Visibility = Visibility.Visible;
+        var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(200))
+        {
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+        CloseConfirmOverlay.BeginAnimation(OpacityProperty, fadeIn);
+    }
 
-        if (result == MessageBoxResult.Yes)
-            Application.Current.Shutdown();
+    private void CloseConfirm_Cancel(object sender, RoutedEventArgs e)
+    {
+        var fadeOut = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(150))
+        {
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
+        };
+        fadeOut.Completed += (_, _) => CloseConfirmOverlay.Visibility = Visibility.Collapsed;
+        CloseConfirmOverlay.BeginAnimation(OpacityProperty, fadeOut);
+    }
+
+    private void CloseConfirm_Quit(object sender, RoutedEventArgs e)
+    {
+        Application.Current.Shutdown();
     }
 
     private void Window_KeyDown(object sender, KeyEventArgs e)
     {
-        if (e.Key == Key.Escape && _isVisible)
+        if (e.Key == Key.Escape)
         {
-            HideOverlay();
-            e.Handled = true;
+            if (CloseConfirmOverlay.Visibility == Visibility.Visible)
+            {
+                CloseConfirm_Cancel(sender, e);
+                e.Handled = true;
+            }
+            else if (_isVisible)
+            {
+                HideOverlay();
+                e.Handled = true;
+            }
         }
     }
 

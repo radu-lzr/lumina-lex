@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
@@ -10,6 +11,8 @@ public sealed class DeepLService
     {
         Timeout = TimeSpan.FromSeconds(60)
     };
+
+    private static DebugLogService Debug => DebugLogService.Instance;
 
     public async Task<string> TranslateAsync(string text, string apiKey, CancellationToken ct = default)
     {
@@ -24,15 +27,23 @@ public sealed class DeepLService
             model_type = "latency_optimized"
         };
 
-        var json = JsonSerializer.Serialize(payload);
+        var json = JsonSerializer.Serialize(payload, new JsonSerializerOptions { WriteIndented = true });
+        Debug.Log("DeepL", $"POST {endpoint}");
+        Debug.Log("DeepL", $"Body:\n{json}");
+
         using var request = new HttpRequestMessage(HttpMethod.Post, endpoint)
         {
             Content = new StringContent(json, Encoding.UTF8, "application/json")
         };
         request.Headers.Add("Authorization", $"DeepL-Auth-Key {apiKey}");
 
+        var sw = Stopwatch.StartNew();
         using var response = await Http.SendAsync(request, ct);
         var body = await response.Content.ReadAsStringAsync(ct);
+        sw.Stop();
+
+        Debug.Log("DeepL", $"HTTP {(int)response.StatusCode} ({sw.ElapsedMilliseconds}ms)");
+        Debug.Log("DeepL", $"Response:\n{Truncate(body)}");
 
         if (!response.IsSuccessStatusCode)
         {
@@ -43,6 +54,9 @@ public sealed class DeepLService
         return ExtractTranslation(body)
             ?? throw new ApiException("DeepL: réponse vide ou format inattendu.");
     }
+
+    private static string Truncate(string s, int max = 2000) =>
+        s.Length <= max ? s : s[..max] + "\n... (tronqué)";
 
     private static string? ExtractTranslation(string json)
     {

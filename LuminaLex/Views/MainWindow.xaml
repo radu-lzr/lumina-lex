@@ -2,6 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:converters="clr-namespace:LuminaLex.Converters"
+        xmlns:models="clr-namespace:LuminaLex.Models"
         Title="Lumina Lex"
         Width="730" Height="590"
         MinWidth="500" MinHeight="350"
@@ -17,6 +18,9 @@
     <Window.Resources>
         <converters:BoolToVisibilityConverter x:Key="BoolToVis"/>
         <converters:BoolToThemeIconConverter x:Key="BoolToThemeIcon"/>
+        <converters:DiffForegroundConverter x:Key="DiffFg"/>
+        <converters:DiffDecorationConverter x:Key="DiffDeco"/>
+        <converters:DiffBackgroundConverter x:Key="DiffBg"/>
     </Window.Resources>
 
     <!-- Outer container: drop shadow + rounded corners -->
@@ -53,7 +57,7 @@
             </Grid.RowDefinitions>
 
             <!-- ── Header gradient line ──────────────────────────── -->
-            <Rectangle Grid.Row="0" Height="3">
+            <Rectangle Grid.Row="0" Height="4">
                 <Rectangle.Fill>
                     <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
                         <GradientStop Color="#4F46E5" Offset="0"/>
@@ -67,6 +71,7 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
@@ -105,37 +110,33 @@
                         Command="{Binding OpenSettingsCommand}"
                         Margin="4,0"/>
 
-                <!-- Theme toggle (pill switch) -->
+                <!-- Theme toggle -->
                 <Button Grid.Column="3"
                         Style="{StaticResource IconButton}"
                         Command="{Binding ToggleThemeCommand}"
                         ToolTip="Changer de thème"
-                        Margin="4,0">
-                    <Grid Width="48" Height="24">
-                        <!-- Track -->
-                        <Border x:Name="ToggleTrack"
-                                CornerRadius="12"
-                                Background="{DynamicResource ButtonDark}"
-                                BorderBrush="{DynamicResource BorderSubtle}"
-                                BorderThickness="1"/>
-                        <!-- Thumb -->
-                        <Border x:Name="ToggleThumb"
-                                Width="20" Height="20"
-                                CornerRadius="10"
-                                Background="{DynamicResource AccentIndigo}"
-                                HorizontalAlignment="Left"
-                                Margin="2,0,0,0">
-                            <TextBlock Text="{Binding IsDarkTheme, Converter={StaticResource BoolToThemeIcon}}"
-                                       FontSize="11"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center"
-                                       Foreground="White"/>
-                        </Border>
-                    </Grid>
+                        Margin="4,0"
+                        Width="36" Height="36">
+                    <TextBlock Text="{Binding IsDarkTheme, Converter={StaticResource BoolToThemeIcon}}"
+                               FontSize="16"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"/>
+                </Button>
+
+                <!-- Debug toggle -->
+                <Button Grid.Column="4"
+                        Style="{StaticResource IconButton}"
+                        Command="{Binding ToggleDebugCommand}"
+                        ToolTip="Terminal de debug"
+                        Margin="4,0"
+                        Width="36" Height="36">
+                    <TextBlock Text="🐛" FontSize="14"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"/>
                 </Button>
 
                 <!-- Close button -->
-                <Button Grid.Column="4"
+                <Button Grid.Column="5"
                         Style="{StaticResource CloseButton}"
                         Content="✕" FontSize="14" FontWeight="Bold"
                         ToolTip="Fermer"
@@ -156,11 +157,27 @@
                 <TextBlock Grid.Row="0" Text="TEXTE SOURCE"
                            Style="{StaticResource SectionLabel}"/>
 
-                <!-- Input text box -->
-                <TextBox Grid.Row="1"
-                         Style="{StaticResource StyledTextBox}"
-                         Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged}"
-                         Margin="0,0,0,16"/>
+                <!-- Input text box with copy/paste buttons -->
+                <Grid Grid.Row="1" Margin="0,0,0,16">
+                    <TextBox Style="{StaticResource StyledTextBox}"
+                             Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged}"/>
+                    <StackPanel Orientation="Horizontal"
+                                HorizontalAlignment="Right" VerticalAlignment="Top"
+                                Margin="0,6,8,0">
+                        <Button Style="{StaticResource IconButton}"
+                                Content="📋" FontSize="12"
+                                ToolTip="Coller"
+                                Width="28" Height="28"
+                                Command="{Binding PasteInputCommand}"
+                                Opacity="0.6"/>
+                        <Button Style="{StaticResource IconButton}"
+                                Content="📄" FontSize="12"
+                                ToolTip="Copier"
+                                Width="28" Height="28"
+                                Command="{Binding CopyInputCommand}"
+                                Opacity="0.6"/>
+                    </StackPanel>
+                </Grid>
 
                 <!-- Action buttons -->
                 <Grid Grid.Row="2" Margin="0,0,0,16">
@@ -195,25 +212,207 @@
                 <TextBlock Grid.Row="3" Text="RÉSULTAT"
                            Style="{StaticResource SectionLabel}"/>
 
-                <!-- Output text box -->
-                <TextBox Grid.Row="4"
-                         Style="{StaticResource StyledTextBox}"
-                         Text="{Binding OutputText, Mode=OneWay}"
-                         IsReadOnly="True"/>
+                <!-- Output area -->
+                <Grid Grid.Row="4">
+                    <!-- Plain output (translation) -->
+                    <TextBox Style="{StaticResource StyledTextBox}"
+                             Text="{Binding OutputText, Mode=OneWay}"
+                             IsReadOnly="True"
+                             Visibility="{Binding ShowDiff, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}"/>
+
+                    <!-- Colored diff output (correction) -->
+                    <Border Background="{DynamicResource SurfaceBackground}"
+                            BorderBrush="{DynamicResource BorderSubtle}"
+                            BorderThickness="1"
+                            CornerRadius="10"
+                            Padding="14,10"
+                            Visibility="{Binding ShowDiff, Converter={StaticResource BoolToVis}}">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                      HorizontalScrollBarVisibility="Disabled">
+                            <ItemsControl ItemsSource="{Binding DiffSegments}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type models:DiffSegment}">
+                                        <Border Background="{Binding Type, Converter={StaticResource DiffBg}}"
+                                                CornerRadius="3"
+                                                Padding="2,1"
+                                                Margin="1,2">
+                                            <TextBlock Text="{Binding Text}"
+                                                       Foreground="{Binding Type, Converter={StaticResource DiffFg}}"
+                                                       TextDecorations="{Binding Type, Converter={StaticResource DiffDeco}}"
+                                                       FontSize="14"
+                                                       FontFamily="Segoe UI Variable Text, Segoe UI, sans-serif"/>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Border>
+
+                    <!-- Copy output button -->
+                    <Button Style="{StaticResource IconButton}"
+                            Content="📄" FontSize="12"
+                            ToolTip="Copier le résultat"
+                            Width="28" Height="28"
+                            HorizontalAlignment="Right" VerticalAlignment="Top"
+                            Margin="0,6,8,0"
+                            Command="{Binding CopyOutputCommand}"
+                            Opacity="0.6"/>
+                </Grid>
             </Grid>
 
             <!-- ── Status bar ────────────────────────────────────── -->
-            <Grid Grid.Row="3" Margin="24,0,24,16">
-                <!-- Progress bar (visible when processing) -->
-                <ProgressBar Style="{StaticResource AccentProgressBar}"
-                             VerticalAlignment="Top"
-                             Visibility="{Binding IsProcessing, Converter={StaticResource BoolToVis}}"
-                             Margin="0,0,0,8"/>
+            <StackPanel Grid.Row="3" Margin="24,0,24,16">
+                <Rectangle Height="1" Fill="{DynamicResource BorderSubtle}" Opacity="0.4" Margin="0,0,0,10"/>
+                <Grid>
+                    <ProgressBar Style="{StaticResource AccentProgressBar}"
+                                 VerticalAlignment="Top"
+                                 Visibility="{Binding IsProcessing, Converter={StaticResource BoolToVis}}"
+                                 Margin="0,0,0,8"/>
+                    <TextBlock Text="{Binding StatusText}"
+                               Style="{StaticResource StatusLabel}"
+                               Margin="0,12,0,0"/>
+                </Grid>
 
-                <TextBlock Text="{Binding StatusText}"
-                           Style="{StaticResource StatusLabel}"
-                           Margin="0,12,0,0"/>
-            </Grid>
+                <!-- ── Debug Panel ─────────────────────────────── -->
+                <Border Visibility="{Binding IsDebugVisible, Converter={StaticResource BoolToVis}}"
+                        Background="{DynamicResource SurfaceBackground}"
+                        BorderBrush="{DynamicResource BorderSubtle}"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        Margin="0,12,0,0"
+                        Padding="0">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="140"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Debug header -->
+                        <Grid Grid.Row="0" Margin="10,6,6,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="🐛 DEBUG"
+                                       FontSize="10" FontWeight="Bold"
+                                       Foreground="{DynamicResource TextMuted}"
+                                       VerticalAlignment="Center"
+                                       FontFamily="Cascadia Code, Consolas, monospace"/>
+                            <Button Grid.Column="2"
+                                    Style="{StaticResource IconButton}"
+                                    Command="{Binding ClearDebugCommand}"
+                                    ToolTip="Effacer les logs"
+                                    Width="24" Height="24"
+                                    Content="✕" FontSize="10"/>
+                        </Grid>
+
+                        <!-- Debug log listbox -->
+                        <ListBox Grid.Row="1"
+                                 ItemsSource="{Binding DebugEntries}"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 Foreground="{DynamicResource TextSecondary}"
+                                 FontFamily="Cascadia Code, Consolas, monospace"
+                                 FontSize="10.5"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                 ScrollViewer.CanContentScroll="True">
+                            <ListBox.ItemContainerStyle>
+                                <Style TargetType="ListBoxItem">
+                                    <Setter Property="Padding" Value="10,2"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="Focusable" Value="False"/>
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="ListBoxItem">
+                                                <Border Padding="{TemplateBinding Padding}"
+                                                        Background="{TemplateBinding Background}">
+                                                    <ContentPresenter/>
+                                                </Border>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </ListBox.ItemContainerStyle>
+                        </ListBox>
+                    </Grid>
+                </Border>
+            </StackPanel>
+
+            <!-- ── Close Confirmation Overlay ─────────────────────── -->
+            <Border x:Name="CloseConfirmOverlay" Grid.RowSpan="4"
+                    Background="{DynamicResource OverlayBackground}"
+                    Visibility="Collapsed">
+                <Border HorizontalAlignment="Center" VerticalAlignment="Center"
+                        Background="{DynamicResource DialogSurface}"
+                        BorderBrush="{DynamicResource BorderSubtle}"
+                        BorderThickness="1"
+                        CornerRadius="16"
+                        Padding="36,32"
+                        MinWidth="340" MaxWidth="400">
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="40" ShadowDepth="8" Opacity="0.5" Color="#000000"/>
+                    </Border.Effect>
+                    <StackPanel>
+                        <!-- Warning icon -->
+                        <Border Width="56" Height="56" CornerRadius="28"
+                                HorizontalAlignment="Center" Margin="0,0,0,20">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                    <GradientStop Color="#DC2626" Offset="0"/>
+                                    <GradientStop Color="#DB2777" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                            <TextBlock Text="✕" FontSize="22" FontWeight="Bold"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       Foreground="White"/>
+                        </Border>
+
+                        <!-- Title -->
+                        <TextBlock Text="Quitter Lumina Lex ?"
+                                   FontSize="18" FontWeight="Bold"
+                                   HorizontalAlignment="Center"
+                                   Foreground="{DynamicResource TextPrimary}"
+                                   FontFamily="Segoe UI Variable Display Semib, Segoe UI, sans-serif"
+                                   Margin="0,0,0,8"/>
+
+                        <!-- Description -->
+                        <TextBlock TextAlignment="Center" LineHeight="20"
+                                   Foreground="{DynamicResource TextSecondary}"
+                                   FontSize="13" HorizontalAlignment="Center"
+                                   FontFamily="Segoe UI Variable Text, Segoe UI, sans-serif"
+                                   Margin="0,0,0,28">
+                            <Run Text="L'application sera fermée et les raccourcis"/>
+                            <LineBreak/>
+                            <Run Text="globaux seront désactivés."/>
+                        </TextBlock>
+
+                        <!-- Buttons -->
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Button Grid.Column="0"
+                                    Style="{StaticResource SecondaryButton}"
+                                    Content="Annuler" Height="40"
+                                    Click="CloseConfirm_Cancel"/>
+                            <Button Grid.Column="2"
+                                    Style="{StaticResource DangerButton}"
+                                    Content="Quitter" Height="40"
+                                    Click="CloseConfirm_Quit"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+            </Border>
         </Grid>
     </Border>
 </Window>

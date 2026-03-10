@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LuminaLex.Models;
@@ -15,10 +16,17 @@ public partial class MainViewModel : ObservableObject
     private CancellationTokenSource? _cts;
 
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(CorrectCommand))]
+    [NotifyCanExecuteChangedFor(nameof(TranslateCommand))]
     private string _inputText = string.Empty;
 
     [ObservableProperty]
     private string _outputText = string.Empty;
+
+    [ObservableProperty]
+    private bool _showDiff;
+
+    public ObservableCollection<DiffSegment> DiffSegments { get; } = new();
 
     [ObservableProperty]
     private string _statusText = "Prêt";
@@ -30,6 +38,33 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _isDarkTheme = true;
+
+    [ObservableProperty]
+    private bool _isDebugVisible;
+
+    public System.Collections.ObjectModel.ObservableCollection<string> DebugEntries =>
+        DebugLogService.Instance.Entries;
+
+    [RelayCommand]
+    private void CopyOutput()
+    {
+        if (!string.IsNullOrEmpty(OutputText))
+            System.Windows.Clipboard.SetText(OutputText);
+    }
+
+    [RelayCommand]
+    private void CopyInput()
+    {
+        if (!string.IsNullOrEmpty(InputText))
+            System.Windows.Clipboard.SetText(InputText);
+    }
+
+    [RelayCommand]
+    private void PasteInput()
+    {
+        if (System.Windows.Clipboard.ContainsText())
+            InputText = System.Windows.Clipboard.GetText();
+    }
 
     public MainViewModel(
         OpenAiService openAi,
@@ -95,9 +130,20 @@ public partial class MainViewModel : ObservableObject
 
         try
         {
-            var result = await _openAi.CorrectAsync(InputText.Trim(), _settings.OpenAiKey, _cts.Token);
-            OutputText = result;
-            StatusText = "Prêt.";
+            var original = InputText.Trim();
+            var corrected = await _openAi.CorrectAsync(original, _settings.OpenAiKey, _cts.Token);
+
+            // Replace source with corrected text
+            InputText = corrected;
+
+            // Build colored diff segments for output
+            DiffSegments.Clear();
+            ShowDiff = true;
+            foreach (var seg in BuildDiffSegments(original, corrected))
+                DiffSegments.Add(seg);
+
+            OutputText = corrected; // plain text for copy
+            StatusText = original == corrected ? "Aucune correction nécessaire." : "Corrigé.";
         }
         catch (OperationCanceledException)
         {
@@ -122,11 +168,6 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanExecuteApi))]
     private async Task TranslateAsync()
     {
-        if (string.IsNullOrWhiteSpace(_settings.OpenAiKey))
-        {
-            StatusText = "⚠ Clé OpenAI manquante — ouvrez les paramètres";
-            return;
-        }
         if (string.IsNullOrWhiteSpace(_settings.DeepLKey))
         {
             StatusText = "⚠ Clé DeepL manquante — ouvrez les paramètres";
@@ -138,18 +179,13 @@ public partial class MainViewModel : ObservableObject
 
         try
         {
-            // Step 1: Correct
-            StatusText = "Correction (gpt-5-nano)...";
-            var corrected = await _openAi.CorrectAsync(InputText.Trim(), _settings.OpenAiKey, _cts.Token);
-            OutputText = corrected;
-
-            // Step 2: Translate
             var endpoint = _settings.DeepLKey.Contains(":fx", StringComparison.Ordinal) ? "Free" : "Pro";
             StatusText = $"Traduction (DeepL {endpoint})...";
-            var translated = await _deepL.TranslateAsync(corrected, _settings.DeepLKey, _cts.Token);
+            var translated = await _deepL.TranslateAsync(InputText.Trim(), _settings.DeepLKey, _cts.Token);
             OutputText = translated;
+            ShowDiff = false;
 
-            StatusText = "Terminé.";
+            StatusText = "Traduit.";
         }
         catch (OperationCanceledException)
         {
@@ -176,7 +212,24 @@ public partial class MainViewModel : ObservableObject
     {
         InputText = string.Empty;
         OutputText = string.Empty;
+        DiffSegments.Clear();
+        ShowDiff = false;
         StatusText = "Effacé.";
+    }
+
+    [RelayCommand]
+    private void ToggleDebug()
+    {
+        IsDebugVisible = !IsDebugVisible;
+        DebugLogService.Instance.IsEnabled = IsDebugVisible;
+        if (IsDebugVisible)
+            DebugLogService.Instance.Log("App", "Mode debug activ\u00e9");
+    }
+
+    [RelayCommand]
+    private void ClearDebug()
+    {
+        DebugLogService.Instance.Clear();
     }
 
     [RelayCommand]
@@ -195,5 +248,49 @@ public partial class MainViewModel : ObservableObject
     private void OpenSettings()
     {
         OpenSettingsRequested?.Invoke();
+    }
+
+    /// <summary>
+    /// Word-level diff producing colored segments.
+    /// </summary>
+    private static List<DiffSegment> BuildDiffSegments(string original, string corrected)
+    {
+        if (original == corrected)
+            return [new DiffSegment("✓ Aucune modification.", DiffType.Unchanged)];
+
+        var oldWords = original.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var newWords = corrected.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+        int m = oldWords.Length, n = newWords.Length;
+        var dp = new int[m + 1, n + 1];
+        for (int i = 1; i <= m; i++)
+            for (int j = 1; j <= n; j++)
+                dp[i, j] = oldWords[i - 1] == newWords[j - 1]
+                    ? dp[i - 1, j - 1] + 1
+                    : Math.Max(dp[i - 1, j], dp[i, j - 1]);
+
+        var parts = new List<DiffSegment>();
+        int ii = m, jj = n;
+        while (ii > 0 || jj > 0)
+        {
+            if (ii > 0 && jj > 0 && oldWords[ii - 1] == newWords[jj - 1])
+            {
+                parts.Add(new DiffSegment(newWords[jj - 1], DiffType.Unchanged));
+                ii--; jj--;
+            }
+            else if (jj > 0 && (ii == 0 || dp[ii, jj - 1] >= dp[ii - 1, jj]))
+            {
+                parts.Add(new DiffSegment(newWords[jj - 1], DiffType.Added));
+                jj--;
+            }
+            else
+            {
+                parts.Add(new DiffSegment(oldWords[ii - 1], DiffType.Removed));
+                ii--;
+            }
+        }
+
+        parts.Reverse();
+        return parts;
     }
 }

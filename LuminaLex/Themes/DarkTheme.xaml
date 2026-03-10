@@ -3,8 +3,8 @@
 
     <!-- Dark Theme Color Tokens -->
     <SolidColorBrush x:Key="WindowBackground"    Color="#030B1A"/>
-    <SolidColorBrush x:Key="SurfaceBackground"   Color="#050C1A"/>
-    <SolidColorBrush x:Key="SurfaceHover"        Color="#0A1628"/>
+    <SolidColorBrush x:Key="SurfaceBackground"   Color="#0F1830"/>
+    <SolidColorBrush x:Key="SurfaceHover"        Color="#152040"/>
     <SolidColorBrush x:Key="AccentIndigo"        Color="#4F46E5"/>
     <SolidColorBrush x:Key="AccentIndigoHover"   Color="#6366F1"/>
     <SolidColorBrush x:Key="AccentPink"          Color="#DB2777"/>
@@ -14,7 +14,7 @@
     <SolidColorBrush x:Key="TextMuted"           Color="#818CF8"/>
     <SolidColorBrush x:Key="ButtonDark"          Color="#1E274D"/>
     <SolidColorBrush x:Key="ButtonDarkHover"     Color="#2D3A6B"/>
-    <SolidColorBrush x:Key="BorderSubtle"        Color="#1E293B"/>
+    <SolidColorBrush x:Key="BorderSubtle"        Color="#253247"/>
     <SolidColorBrush x:Key="ScrollbarThumb"      Color="#334155"/>
     <SolidColorBrush x:Key="ScrollbarTrack"      Color="#0F172A"/>
     <SolidColorBrush x:Key="GradientStart"       Color="#4F46E5"/>
@@ -23,5 +23,10 @@
     <SolidColorBrush x:Key="FocusBorder"         Color="#6366F1"/>
     <SolidColorBrush x:Key="ErrorText"           Color="#F87171"/>
     <SolidColorBrush x:Key="SuccessText"         Color="#34D399"/>
+
+    <SolidColorBrush x:Key="OverlayBackground"    Color="#CC000000"/>
+    <SolidColorBrush x:Key="DialogSurface"        Color="#0D1629"/>
+    <SolidColorBrush x:Key="DangerRed"            Color="#DC2626"/>
+    <SolidColorBrush x:Key="DangerRedHover"       Color="#EF4444"/>
 
 </ResourceDictionary>

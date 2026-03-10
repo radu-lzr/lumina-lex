@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
@@ -12,6 +13,7 @@ public sealed class OpenAiService
     };
 
     private const string Endpoint = "https://api.openai.com/v1/responses";
+    private static DebugLogService Debug => DebugLogService.Instance;
 
     public async Task<string> CorrectAsync(string text, string apiKey, CancellationToken ct = default)
     {
@@ -28,15 +30,23 @@ public sealed class OpenAiService
             max_output_tokens = 2048
         };
 
-        var json = JsonSerializer.Serialize(payload);
+        var json = JsonSerializer.Serialize(payload, new JsonSerializerOptions { WriteIndented = true });
+        Debug.Log("OpenAI", $"POST {Endpoint}");
+        Debug.Log("OpenAI", $"Body:\n{json}");
+
         using var request = new HttpRequestMessage(HttpMethod.Post, Endpoint)
         {
             Content = new StringContent(json, Encoding.UTF8, "application/json")
         };
         request.Headers.Add("Authorization", $"Bearer {apiKey}");
 
+        var sw = Stopwatch.StartNew();
         using var response = await Http.SendAsync(request, ct);
         var body = await response.Content.ReadAsStringAsync(ct);
+        sw.Stop();
+
+        Debug.Log("OpenAI", $"HTTP {(int)response.StatusCode} ({sw.ElapsedMilliseconds}ms)");
+        Debug.Log("OpenAI", $"Response:\n{Truncate(body)}");
 
         if (!response.IsSuccessStatusCode)
         {
@@ -47,6 +57,9 @@ public sealed class OpenAiService
         return ExtractResponsesText(body)
             ?? throw new ApiException("OpenAI: réponse vide ou format inattendu.");
     }
+
+    private static string Truncate(string s, int max = 2000) =>
+        s.Length <= max ? s : s[..max] + "\n... (tronqué)";
 
     private static string? ExtractResponsesText(string json)
     {

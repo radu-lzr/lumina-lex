@@ -4,7 +4,7 @@
     <!-- Light Theme Color Tokens -->
     <SolidColorBrush x:Key="WindowBackground"    Color="#F8FAFC"/>
     <SolidColorBrush x:Key="SurfaceBackground"   Color="#FFFFFF"/>
-    <SolidColorBrush x:Key="SurfaceHover"        Color="#F1F5F9"/>
+    <SolidColorBrush x:Key="SurfaceHover"        Color="#EDF1F7"/>
     <SolidColorBrush x:Key="AccentIndigo"        Color="#4F46E5"/>
     <SolidColorBrush x:Key="AccentIndigoHover"   Color="#4338CA"/>
     <SolidColorBrush x:Key="AccentPink"          Color="#DB2777"/>
@@ -23,5 +23,10 @@
     <SolidColorBrush x:Key="FocusBorder"         Color="#4F46E5"/>
     <SolidColorBrush x:Key="ErrorText"           Color="#DC2626"/>
     <SolidColorBrush x:Key="SuccessText"         Color="#059669"/>
+
+    <SolidColorBrush x:Key="OverlayBackground"    Color="#80000000"/>
+    <SolidColorBrush x:Key="DialogSurface"        Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="DangerRed"            Color="#DC2626"/>
+    <SolidColorBrush x:Key="DangerRedHover"       Color="#EF4444"/>
 
 </ResourceDictionary>
