@@ -1,0 +1,164 @@
+<Window x:Class="LuminaLex.Views.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:converters="clr-namespace:LuminaLex.Converters"
+        Title="Paramètres — Lumina Lex"
+        Width="560" Height="480"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner"
+        KeyDown="Window_KeyDown">
+
+    <Window.Resources>
+        <converters:BoolToVisibilityConverter x:Key="BoolToVis"/>
+    </Window.Resources>
+
+    <Border CornerRadius="12" Margin="16"
+            Background="{DynamicResource WindowBackground}"
+            BorderBrush="{DynamicResource WindowBorder}"
+            BorderThickness="1">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="20" ShadowDepth="3" Opacity="0.35" Color="#000000"/>
+        </Border.Effect>
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>  <!-- Gradient line -->
+                <RowDefinition Height="Auto"/>  <!-- Title -->
+                <RowDefinition Height="*"/>     <!-- Form -->
+                <RowDefinition Height="Auto"/>  <!-- Status -->
+                <RowDefinition Height="Auto"/>  <!-- Buttons -->
+            </Grid.RowDefinitions>
+
+            <!-- Gradient line -->
+            <Rectangle Grid.Row="0" Height="3">
+                <Rectangle.Fill>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                        <GradientStop Color="#4F46E5" Offset="0"/>
+                        <GradientStop Color="#DB2777" Offset="1"/>
+                    </LinearGradientBrush>
+                </Rectangle.Fill>
+            </Rectangle>
+
+            <!-- Title bar -->
+            <Grid Grid.Row="1" Margin="24,16,24,8" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                <TextBlock Text="⚙  Paramètres"
+                           FontSize="18" FontWeight="Bold"
+                           Foreground="{DynamicResource TextPrimary}"
+                           FontFamily="Segoe UI Variable Display Semib, Segoe UI, sans-serif"/>
+            </Grid>
+
+            <!-- Form content -->
+            <StackPanel Grid.Row="2" Margin="24,8,24,8">
+
+                <!-- OpenAI Key -->
+                <TextBlock Text="CLÉ OPENAI" Style="{StaticResource SectionLabel}" Margin="0,8,0,0"/>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Hidden PasswordBox -->
+                    <PasswordBox x:Name="OpenAiPasswordBox"
+                                 Grid.Column="0"
+                                 Style="{StaticResource StyledPasswordBox}"
+                                 PasswordChanged="OpenAiPasswordBox_Changed"
+                                 Visibility="{Binding ShowOpenAiKey, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}"/>
+
+                    <!-- Visible TextBox (when revealed) -->
+                    <TextBox x:Name="OpenAiTextBox"
+                             Grid.Column="0"
+                             Style="{StaticResource StyledTextBox}"
+                             Text="{Binding OpenAiKey, UpdateSourceTrigger=PropertyChanged}"
+                             AcceptsReturn="False" TextWrapping="NoWrap"
+                             VerticalScrollBarVisibility="Disabled"
+                             Visibility="{Binding ShowOpenAiKey, Converter={StaticResource BoolToVis}}"/>
+
+                    <!-- Reveal toggle -->
+                    <Button Grid.Column="1"
+                            Style="{StaticResource IconButton}"
+                            Content="👁" FontSize="14"
+                            ToolTip="Afficher/Masquer"
+                            Command="{Binding ToggleShowOpenAiKeyCommand}"
+                            Margin="4,0,0,0"/>
+                </Grid>
+
+                <!-- DeepL Key -->
+                <TextBlock Text="CLÉ DEEPL" Style="{StaticResource SectionLabel}" Margin="0,16,0,0"/>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <PasswordBox x:Name="DeepLPasswordBox"
+                                 Grid.Column="0"
+                                 Style="{StaticResource StyledPasswordBox}"
+                                 PasswordChanged="DeepLPasswordBox_Changed"
+                                 Visibility="{Binding ShowDeepLKey, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}"/>
+
+                    <TextBox x:Name="DeepLTextBox"
+                             Grid.Column="0"
+                             Style="{StaticResource StyledTextBox}"
+                             Text="{Binding DeepLKey, UpdateSourceTrigger=PropertyChanged}"
+                             AcceptsReturn="False" TextWrapping="NoWrap"
+                             VerticalScrollBarVisibility="Disabled"
+                             Visibility="{Binding ShowDeepLKey, Converter={StaticResource BoolToVis}}"/>
+
+                    <Button Grid.Column="1"
+                            Style="{StaticResource IconButton}"
+                            Content="👁" FontSize="14"
+                            ToolTip="Afficher/Masquer"
+                            Command="{Binding ToggleShowDeepLKeyCommand}"
+                            Margin="4,0,0,0"/>
+                </Grid>
+
+                <!-- Theme selector -->
+                <TextBlock Text="THÈME" Style="{StaticResource SectionLabel}" Margin="0,24,0,0"/>
+                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                    <RadioButton x:Name="DarkRadio"
+                                 Content="🌙  Sombre"
+                                 FontSize="13"
+                                 Foreground="{DynamicResource TextPrimary}"
+                                 IsChecked="{Binding IsDarkTheme}"
+                                 Margin="0,0,24,0" Cursor="Hand"/>
+                    <RadioButton Content="☀  Clair"
+                                 FontSize="13"
+                                 Foreground="{DynamicResource TextPrimary}"
+                                 Cursor="Hand"/>
+                </StackPanel>
+            </StackPanel>
+
+            <!-- Status -->
+            <TextBlock Grid.Row="3"
+                       Text="{Binding StatusText}"
+                       Style="{StaticResource StatusLabel}"
+                       Margin="24,0,24,8"/>
+
+            <!-- Action buttons -->
+            <Grid Grid.Row="4" Margin="24,0,24,20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="12"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <Button Grid.Column="0"
+                        Style="{StaticResource PrimaryButton}"
+                        Content="Sauvegarder"
+                        Height="40"
+                        Command="{Binding SaveCommand}"/>
+
+                <Button Grid.Column="2"
+                        Style="{StaticResource SecondaryButton}"
+                        Content="Annuler"
+                        Height="40"
+                        Command="{Binding CancelCommand}"/>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

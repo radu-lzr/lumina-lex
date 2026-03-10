@@ -1,0 +1,16 @@
+﻿<Application x:Class="LuminaLex.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Startup="Application_Startup"
+             Exit="Application_Exit">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!-- Index 0: Theme dictionary (swapped at runtime by ThemeService) -->
+                <ResourceDictionary Source="Themes/DarkTheme.xaml"/>
+                <!-- Index 1: Shared control styles (uses DynamicResource for theme tokens) -->
+                <ResourceDictionary Source="Themes/SharedStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

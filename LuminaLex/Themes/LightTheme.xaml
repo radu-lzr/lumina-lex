@@ -1,0 +1,27 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Light Theme Color Tokens -->
+    <SolidColorBrush x:Key="WindowBackground"    Color="#F8FAFC"/>
+    <SolidColorBrush x:Key="SurfaceBackground"   Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="SurfaceHover"        Color="#F1F5F9"/>
+    <SolidColorBrush x:Key="AccentIndigo"        Color="#4F46E5"/>
+    <SolidColorBrush x:Key="AccentIndigoHover"   Color="#4338CA"/>
+    <SolidColorBrush x:Key="AccentPink"          Color="#DB2777"/>
+    <SolidColorBrush x:Key="AccentPinkHover"     Color="#BE185D"/>
+    <SolidColorBrush x:Key="TextPrimary"         Color="#0F172A"/>
+    <SolidColorBrush x:Key="TextSecondary"       Color="#475569"/>
+    <SolidColorBrush x:Key="TextMuted"           Color="#64748B"/>
+    <SolidColorBrush x:Key="ButtonDark"          Color="#E2E8F0"/>
+    <SolidColorBrush x:Key="ButtonDarkHover"     Color="#CBD5E1"/>
+    <SolidColorBrush x:Key="BorderSubtle"        Color="#E2E8F0"/>
+    <SolidColorBrush x:Key="ScrollbarThumb"      Color="#94A3B8"/>
+    <SolidColorBrush x:Key="ScrollbarTrack"      Color="#F1F5F9"/>
+    <SolidColorBrush x:Key="GradientStart"       Color="#4F46E5"/>
+    <SolidColorBrush x:Key="GradientEnd"         Color="#DB2777"/>
+    <SolidColorBrush x:Key="WindowBorder"        Color="#E2E8F0"/>
+    <SolidColorBrush x:Key="FocusBorder"         Color="#4F46E5"/>
+    <SolidColorBrush x:Key="ErrorText"           Color="#DC2626"/>
+    <SolidColorBrush x:Key="SuccessText"         Color="#059669"/>
+
+</ResourceDictionary>

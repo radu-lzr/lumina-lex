@@ -1,0 +1,34 @@
+# Build output
+**/bin/
+**/obj/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Rider / ReSharper
+*.sln.iml
+_ReSharper*/
+*.DotSettings.user
+
+# Test and coverage output
+TestResults/
+coverage/
+coverage-*/
+*.coverage
+*.coveragexml
+
+# Logs and local environment files
+*.log
+.env
+.env.*
+
+# OS/editor noise
+Thumbs.db
+Desktop.ini
+
+# Repo-specific local config
+old/config.ini
