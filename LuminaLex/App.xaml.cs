@@ -1,4 +1,5 @@
 ﻿using System.Windows;
+using System.Windows.Interop;
 using LuminaLex.Models;
 using LuminaLex.Services;
 using LuminaLex.ViewModels;
@@ -38,9 +39,8 @@ public partial class App : Application
             Opacity = 0
         };
 
-        // We need to show + hide immediately so the HWND exists for hotkey registration
-        _mainWindow.Show();
-        _mainWindow.Hide();
+        // Ensure HWND exists for hotkey registration without showing the window
+        new WindowInteropHelper(_mainWindow).EnsureHandle();
 
         // Register global hotkeys
         _hotkeyService = new HotkeyService();
