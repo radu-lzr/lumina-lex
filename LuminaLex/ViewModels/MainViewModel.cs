@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LuminaLex.Models;
@@ -113,6 +114,9 @@ public partial class MainViewModel : ObservableObject
         return $"{key[..8]}...{key[^3..]}";
     }
 
+    private static string FormatElapsed(TimeSpan ts) =>
+        ts.TotalSeconds >= 1 ? $"{ts.TotalSeconds:F1}s" : $"{ts.TotalMilliseconds:F0}ms";
+
     private bool CanExecuteApi() => !IsProcessing && !string.IsNullOrWhiteSpace(InputText);
 
     [RelayCommand(CanExecute = nameof(CanExecuteApi))]
@@ -127,11 +131,13 @@ public partial class MainViewModel : ObservableObject
         IsProcessing = true;
         _cts = new CancellationTokenSource();
         StatusText = "Correction (gpt-5-nano)...";
+        var sw = Stopwatch.StartNew();
 
         try
         {
             var original = InputText.Trim();
             var corrected = await _openAi.CorrectAsync(original, _settings.OpenAiKey, _cts.Token);
+            sw.Stop();
 
             // Replace source with corrected text
             InputText = corrected;
@@ -143,19 +149,22 @@ public partial class MainViewModel : ObservableObject
                 DiffSegments.Add(seg);
 
             OutputText = corrected; // plain text for copy
-            StatusText = original == corrected ? "Aucune correction nécessaire." : "Corrigé.";
+            var elapsed = FormatElapsed(sw.Elapsed);
+            StatusText = original == corrected
+                ? $"Aucune correction nécessaire. ({elapsed})"
+                : $"Corrigé. ({elapsed})";
         }
         catch (OperationCanceledException)
         {
-            StatusText = "Annulé.";
+            StatusText = $"Annulé. ({FormatElapsed(sw.Elapsed)})";
         }
         catch (ApiException ex)
         {
-            StatusText = $"Erreur : {ex.Message}";
+            StatusText = $"Erreur : {ex.Message} ({FormatElapsed(sw.Elapsed)})";
         }
         catch (Exception ex)
         {
-            StatusText = $"Erreur réseau : {ex.Message}";
+            StatusText = $"Erreur réseau : {ex.Message} ({FormatElapsed(sw.Elapsed)})";
         }
         finally
         {
@@ -176,28 +185,30 @@ public partial class MainViewModel : ObservableObject
 
         IsProcessing = true;
         _cts = new CancellationTokenSource();
+        var sw = Stopwatch.StartNew();
 
         try
         {
             var endpoint = _settings.DeepLKey.Contains(":fx", StringComparison.Ordinal) ? "Free" : "Pro";
             StatusText = $"Traduction (DeepL {endpoint})...";
             var translated = await _deepL.TranslateAsync(InputText.Trim(), _settings.DeepLKey, _cts.Token);
+            sw.Stop();
             OutputText = translated;
             ShowDiff = false;
 
-            StatusText = "Traduit.";
+            StatusText = $"Traduit. ({FormatElapsed(sw.Elapsed)})";
         }
         catch (OperationCanceledException)
         {
-            StatusText = "Annulé.";
+            StatusText = $"Annulé. ({FormatElapsed(sw.Elapsed)})";
         }
         catch (ApiException ex)
         {
-            StatusText = $"Erreur : {ex.Message}";
+            StatusText = $"Erreur : {ex.Message} ({FormatElapsed(sw.Elapsed)})";
         }
         catch (Exception ex)
         {
-            StatusText = $"Erreur réseau : {ex.Message}";
+            StatusText = $"Erreur réseau : {ex.Message} ({FormatElapsed(sw.Elapsed)})";
         }
         finally
         {

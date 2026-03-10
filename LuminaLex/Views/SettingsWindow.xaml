@@ -131,6 +131,32 @@
                                  Foreground="{DynamicResource TextPrimary}"
                                  Cursor="Hand"/>
                 </StackPanel>
+
+                <!-- Hotkey -->
+                <TextBlock Text="RACCOURCI GLOBAL" Style="{StaticResource SectionLabel}" Margin="0,24,0,0"/>
+                <Grid Margin="0,4,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="HotkeyRecorder"
+                             Grid.Column="0"
+                             Style="{StaticResource StyledTextBox}"
+                             Text="{Binding HotkeyGesture, Mode=OneWay}"
+                             IsReadOnly="True"
+                             Cursor="Hand"
+                             FontSize="14" FontWeight="SemiBold"
+                             TextAlignment="Center"
+                             PreviewKeyDown="HotkeyRecorder_PreviewKeyDown"
+                             GotFocus="HotkeyRecorder_GotFocus"
+                             LostFocus="HotkeyRecorder_LostFocus"/>
+                    <Button Grid.Column="1"
+                            Style="{StaticResource IconButton}"
+                            Content="↺" FontSize="16"
+                            ToolTip="Réinitialiser (²)"
+                            Click="ResetHotkey_Click"
+                            Margin="4,0,0,0"/>
+                </Grid>
             </StackPanel>
 
             <!-- Status -->

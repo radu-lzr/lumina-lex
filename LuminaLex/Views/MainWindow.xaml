@@ -4,6 +4,7 @@
         xmlns:converters="clr-namespace:LuminaLex.Converters"
         xmlns:models="clr-namespace:LuminaLex.Models"
         Title="Lumina Lex"
+        Icon="/app.ico"
         Width="730" Height="590"
         MinWidth="500" MinHeight="350"
         WindowStyle="None"

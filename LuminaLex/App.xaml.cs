@@ -15,6 +15,7 @@ public partial class App : Application
     private SettingsService? _settingsService;
     private ThemeService? _themeService;
     private AppSettings? _settings;
+    private System.Windows.Forms.NotifyIcon? _trayIcon;
 
     private void Application_Startup(object sender, StartupEventArgs e)
     {
@@ -46,7 +47,38 @@ public partial class App : Application
         _hotkeyService = new HotkeyService();
         _hotkeyService.ToggleRequested += () =>
             Dispatcher.Invoke(() => _mainWindow.ToggleOverlay());
-        _hotkeyService.Register(_mainWindow);
+        _hotkeyService.Register(_mainWindow, _settings.HotkeyGesture);
+
+        // System tray icon
+        SetupTrayIcon();
+
+        // Show overlay on startup
+        _mainWindow.ShowOverlay();
+    }
+
+    private void SetupTrayIcon()
+    {
+        var iconStream = GetResourceStream(new Uri("pack://application:,,,/app.ico"))?.Stream;
+        var icon = iconStream != null
+            ? new System.Drawing.Icon(iconStream)
+            : System.Drawing.SystemIcons.Application;
+
+        var contextMenu = new System.Windows.Forms.ContextMenuStrip();
+        contextMenu.Items.Add("Ouvrir Lumina Lex", null, (_, _) =>
+            Dispatcher.Invoke(() => _mainWindow?.ShowOverlay()));
+        contextMenu.Items.Add(new System.Windows.Forms.ToolStripSeparator());
+        contextMenu.Items.Add("Quitter", null, (_, _) =>
+            Dispatcher.Invoke(() => Shutdown()));
+
+        _trayIcon = new System.Windows.Forms.NotifyIcon
+        {
+            Icon = icon,
+            Text = "Lumina Lex",
+            Visible = true,
+            ContextMenuStrip = contextMenu
+        };
+        _trayIcon.DoubleClick += (_, _) =>
+            Dispatcher.Invoke(() => _mainWindow?.ShowOverlay());
     }
 
     private void OnOpenSettings()
@@ -67,11 +99,19 @@ public partial class App : Application
             // Reload settings into main VM
             _settings = _settingsService.Load();
             _mainVm.ReloadSettings(_settings);
+
+            // Re-register hotkey with potentially new gesture
+            _hotkeyService?.Register(_mainWindow!, _settings.HotkeyGesture);
         }
     }
 
     private void Application_Exit(object sender, ExitEventArgs e)
     {
+        if (_trayIcon != null)
+        {
+            _trayIcon.Visible = false;
+            _trayIcon.Dispose();
+        }
         _hotkeyService?.Dispose();
     }
 }

@@ -21,6 +21,9 @@ public partial class SettingsViewModel : ObservableObject
     private bool _isDarkTheme = true;
 
     [ObservableProperty]
+    private string _hotkeyGesture = "²";
+
+    [ObservableProperty]
     private string _statusText = string.Empty;
 
     [ObservableProperty]
@@ -40,6 +43,7 @@ public partial class SettingsViewModel : ObservableObject
         OpenAiKey = settings.OpenAiKey;
         DeepLKey = settings.DeepLKey;
         IsDarkTheme = settings.IsDarkTheme;
+        HotkeyGesture = settings.HotkeyGesture;
     }
 
     partial void OnIsDarkThemeChanged(bool value)
@@ -61,6 +65,7 @@ public partial class SettingsViewModel : ObservableObject
         _settings.OpenAiKey = OpenAiKey.Trim();
         _settings.DeepLKey = DeepLKey.Trim();
         _settings.IsDarkTheme = IsDarkTheme;
+        _settings.HotkeyGesture = HotkeyGesture;
 
         _settingsService.Save(_settings);
         Saved = true;

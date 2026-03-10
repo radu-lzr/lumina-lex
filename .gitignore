@@ -32,3 +32,8 @@ Desktop.ini
 
 # Repo-specific local config
 old/config.ini
+
+
+**.dll**
+**.pdb**
+**.exe**
